@@ -1,4 +1,6 @@
-import { notesIndex } from "@/lib/db/pinecone";
+import { auth } from "@clerk/nextjs/server";
+import pgvector from "pgvector";
+
 import prisma from "@/lib/db/prisma";
 import { getTransformersEmbeddings } from "@/lib/pipeline";
 import {
@@ -6,7 +8,6 @@ import {
   deleteNoteSchema,
   updateNoteSchema,
 } from "@/lib/validation/note";
-import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
@@ -26,9 +27,10 @@ export async function POST(req: Request) {
     const { title, content } = parsedBody.data;
 
     const embedding = await getEmbeddingForNote(title, content);
+    const pgEmbedding = pgvector.toSql(embedding);
 
     const note = await prisma.$transaction(async (tx) => {
-      const note = await tx.note.create({
+      const newNote = await tx.note.create({
         data: {
           title,
           content,
@@ -36,15 +38,11 @@ export async function POST(req: Request) {
         },
       });
 
-      await notesIndex.upsert([
-        {
-          id: note.id,
-          values: embedding,
-          metadata: { userId },
-        },
-      ]);
+      // await tx.$executeRaw`CREATE EXTENSION IF NOT EXISTS vector`;
+      await tx.$executeRaw`INSERT INTO vector_notes (embedding, userid, noteid) 
+      VALUES (${pgEmbedding}::vector, ${userId}, ${newNote.id})`;
 
-      return note;
+      return newNote;
     });
 
     return Response.json({ note }, { status: 201 });
@@ -83,6 +81,7 @@ export async function PUT(req: Request) {
     }
 
     const embedding = await getEmbeddingForNote(title, content);
+    const pgEmbedding = pgvector.toSql(embedding);
 
     const updatedNote = await prisma.$transaction(async (tx) => {
       const updatedNote = await tx.note.update({
@@ -93,13 +92,9 @@ export async function PUT(req: Request) {
         },
       });
 
-      await notesIndex.upsert([
-        {
-          id,
-          values: embedding,
-          metadata: { userId },
-        },
-      ]);
+      await tx.$executeRaw`UPDATE vector_notes 
+      SET embedding=${pgEmbedding}::vector 
+      WHERE userid=${userId} AND noteid=${id}`;
 
       return updatedNote;
     });
@@ -139,12 +134,11 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Unauthorised" }, { status: 403 });
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.note.delete({
-        where: { id },
-      });
-
-      await notesIndex.deleteOne(id);
+    // vector note will be cascaded on delete
+    await prisma.note.delete({
+      where: {
+        id,
+      },
     });
 
     return Response.json({ message: "Note deleted" }, { status: 200 });

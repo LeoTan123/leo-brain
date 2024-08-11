@@ -2,8 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { ModelFusionTextStream, asChatMessages } from "@modelfusion/vercel-ai";
 import { Message, StreamingTextResponse } from "ai";
 import { llamacpp, streamText, trimChatPrompt } from "modelfusion";
+import pgvector from "pgvector";
+import { VectorNote } from "@prisma/client";
 
-import { notesIndex } from "@/lib/db/pinecone";
 import prisma from "@/lib/db/prisma";
 import { getTransformersEmbeddings } from "@/lib/pipeline";
 
@@ -21,20 +22,17 @@ export async function POST(req: Request) {
     const textEmbedding = messagesTruncated
       .map((message) => message.content)
       .join("\n");
-    console.log("text embedding:", textEmbedding);
 
     const embedding = await getTransformersEmbeddings(textEmbedding);
+    const pgEmbedding = pgvector.toSql(embedding);
 
-    const vectorQueryResponse = await notesIndex.query({
-      vector: embedding,
-      topK: 4,
-      filter: { userId },
-    });
+    const vectors: Pick<VectorNote, "noteid">[] =
+      await prisma.$queryRaw`SELECT noteid FROM vector_notes WHERE userid=${userId} ORDER BY embedding <=> ${pgEmbedding}::vector LIMIT 5`;
 
     const relevantNotes = await prisma.note.findMany({
       where: {
         id: {
-          in: vectorQueryResponse.matches.map((match) => match.id),
+          in: vectors.map((vector) => vector.noteid),
         },
       },
     });
@@ -42,7 +40,6 @@ export async function POST(req: Request) {
     const joinedRelevantNotes = relevantNotes
       .map((note) => `Title: ${note.title}\nContent:\n${note.content}`)
       .join("\n\n");
-    console.log(joinedRelevantNotes);
 
     // model fusion
     const model = llamacpp
