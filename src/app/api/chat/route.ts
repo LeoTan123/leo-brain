@@ -29,6 +29,12 @@ export async function POST(req: Request) {
     const vectors: Pick<VectorNote, "noteid">[] =
       await prisma.$queryRaw`SELECT noteid FROM vector_notes WHERE userid=${userId} ORDER BY embedding <=> ${pgEmbedding}::vector LIMIT 5`;
 
+    const allNotes = await prisma.note.findMany({
+      where: {
+        userId,
+      },
+    });
+
     const relevantNotes = await prisma.note.findMany({
       where: {
         id: {
@@ -60,11 +66,9 @@ export async function POST(req: Request) {
         model,
         prompt: {
           system:
-            "You are an AI assistant chatbot on a note taking website. " +
+            "You are an AI assistant chatbot on a note taking website called LeoBrain. " +
             "The user may ask you questions about their existing notes. " +
-            "These are the user's relevant notes for this query:\n" +
-            joinedRelevantNotes,
-
+            `${allNotes.length === 0 ? "But the user currently do not have any notes yet. Ask them to create one using the 'Add Note' button at the top right of the website and come back to ask questions about it." : relevantNotes.length === 0 ? "There are no relevant notes for this query. Ask them to rephrase the question." : `These are the user's relevant notes for this query:\n` + joinedRelevantNotes}`,
           // map Vercel AI SDK Message to ModelFusion ChatMessage:
           messages: asChatMessages(messages),
         },
