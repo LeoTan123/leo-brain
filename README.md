@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## Introduction
+Adapted from [this](https://www.youtube.com/watch?v=mkJbEP5GeRA) youtube tutorial from Coding in Flow.
 
-## Getting Started
+Differences:
+- Due to OpenAI free trial credits being discontinued, open source alternatives were used.
+  * Replaced OpenAI API model `text-ada-002` with [Xenova/all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2) model using [Transformers.js](https://huggingface.co/docs/transformers.js/en/index) to create embeddings locally
+  * Replaced OpenAI API model `gpt-3.5-turbo` with [llama-2-7b-chat.Q4_K_M.gguf](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF) model using [llama.cpp](https://github.com/ggerganov/llama.cpp) web server to serve the model locally
+- Store vector embeddings in [pgvector](https://github.com/pgvector/pgvector) locally using Docker instead of [Pinecone](https://www.pinecone.io/)
 
-First, run the development server:
 
+## Setup
+1. Firstly, clone the repository and install the dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/LeoTan123/leo-brain.git
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Next, install/download [llama.cpp](https://github.com/ggerganov/llama.cpp) and the [llama-2-7b-chat.Q4_K_M.gguf](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF) model. Then, serve the Llama 2 model using the llama.cpp web server with:
+```bash
+./llama-server -m models/llama-2-7b-chat.Q4_K_M.gguf
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Create a .env file with the following variables
+```
+DATABASE_URL=
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 
-## Learn More
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/notes
+NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/notes
 
-To learn more about Next.js, take a look at the following resources:
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Lastly, run the database and the project
+```bash
+docker compose up
+npm run dev
+```
+(optional) run Prisma Studio to see the database data
+```bash
+npx prisma studio
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+<i>Last updated: 19 August 2024</i>
