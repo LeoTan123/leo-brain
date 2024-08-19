@@ -1,4 +1,10 @@
-import { FeatureExtractionPipeline, pipeline } from "@xenova/transformers";
+import { FeatureExtractionPipeline, pipeline, env } from "@xenova/transformers";
+
+// Specify a custom location for models (defaults to '/models/').
+env.localModelPath = "models";
+
+// Disable the loading of remote models from the Hugging Face Hub:
+env.allowRemoteModels = false;
 
 // Use the Singleton pattern to enable lazy construction of the pipeline.
 // NOTE: We wrap the class in a function to prevent code duplication (see below).
