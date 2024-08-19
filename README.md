@@ -6,6 +6,7 @@ Differences:
   * Replaced OpenAI API model `text-ada-002` with [Xenova/all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2) model using [Transformers.js](https://huggingface.co/docs/transformers.js/en/index) to create embeddings locally
   * Replaced OpenAI API model `gpt-3.5-turbo` with [llama-2-7b-chat.Q4_K_M.gguf](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF) model using [llama.cpp](https://github.com/ggerganov/llama.cpp) web server to serve the model locally
 - Store vector embeddings in [pgvector](https://github.com/pgvector/pgvector) locally using Docker instead of [Pinecone](https://www.pinecone.io/)
+- Use Postgres database (pgvector) to store the notes instead of MongoDB
 
 
 ## Setup
