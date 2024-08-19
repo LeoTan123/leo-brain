@@ -8,6 +8,8 @@ Differences:
 - Store vector embeddings in [pgvector](https://github.com/pgvector/pgvector) locally using Docker instead of [Pinecone](https://www.pinecone.io/)
 - Use Postgres database (pgvector) to store the notes instead of MongoDB
 
+## Demo video
+https://github.com/user-attachments/assets/072c721f-bb9a-4464-b243-97ebb82eb13b
 
 ## Setup
 1. Firstly, clone the repository and install the dependencies
@@ -49,3 +51,4 @@ npx prisma studio
 ```
 
 <i>Last updated: 19 August 2024</i>
+
